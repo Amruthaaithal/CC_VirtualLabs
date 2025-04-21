@@ -9,7 +9,8 @@ PAGE_SIZE = 4
 allocations = []
 
 def get_used_memory():
-    return sum(a['memory'] for a in allocations if not a['swapped'])
+    # Count all memory, even swapped, for correct UI update
+    return sum(a['memory'] for a in allocations)
 
 @app.route("/", methods=["GET"])
 def index():
@@ -24,13 +25,15 @@ def allocate():
     if not process_id or memory is None:
         return jsonify({"error": "Missing 'process_id' or 'memory'"}), 400
 
-    # Ensure memory is an integer
     try:
         memory = int(memory)
     except ValueError:
         return jsonify({"error": "'memory' must be an integer"}), 400
 
-    used_memory = get_used_memory()
+    if any(a["process_id"] == process_id for a in allocations):
+        return jsonify({"error": f"Process ID '{process_id}' already exists"}), 400
+
+    used_memory = sum(a["memory"] for a in allocations if not a["swapped"])
     pages = (memory + PAGE_SIZE - 1) // PAGE_SIZE
     swapped = used_memory + memory > TOTAL_MEMORY
 
@@ -69,7 +72,7 @@ def status():
     return jsonify({
         "total_memory": TOTAL_MEMORY,
         "used_memory": used_memory,
-        "free_memory": TOTAL_MEMORY - used_memory,
+        "free_memory": max(TOTAL_MEMORY - used_memory, 0),
         "allocations": allocations
     })
 
