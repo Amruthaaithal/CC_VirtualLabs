@@ -18,20 +18,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const res = await fetch('/add', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
+    		const res = await fetch('/add', {
+        	method: 'POST',
+        	headers: { 'Content-Type': 'application/json' },
+        	body: JSON.stringify(data)
+    	    });
 
-            const result = await res.json();
+   	    const result = await res.json();
 
-            form.reset();
-            showMessage(result.message || 'Process added successfully!', 'success');
-            fetchProcesses();
-        } catch (err) {
-            showMessage('Failed to add process.', 'error');
-        }
+    	    if (res.status === 409) {
+        	showMessage(result.message, 'error');
+        	return;
+   	   }
+
+   	   form.reset();
+   	   showMessage(result.message || 'Process added successfully!', 'success');
+      	   fetchProcesses();
+	} catch (err) {
+    		showMessage('Failed to add process.', 'error');
+	}
+
     });
 });
 
