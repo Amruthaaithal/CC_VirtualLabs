@@ -13,6 +13,11 @@ process_list = []
 @app.route("/add", methods=["POST"])
 def add_process():
     data = request.json
+
+    # Check for duplicate PID
+    if any(p["pid"] == data["pid"] for p in process_list):
+        return jsonify({"message": f"PID '{data['pid']}' already exists."}), 409  # Conflict status code
+
     process = {
         "pid": data["pid"],
         "arrival_time": data["arrival_time"],
@@ -24,7 +29,6 @@ def add_process():
     # Prepare message for shared memory microservice
     message = f"PID={process['pid']},Memory={process['memory_required']}MB"
     try:
-        # Send via GET request
         params = urlencode({'message': message})
         memory_url = f"http://ipc-service:8000/simulate/shared_memory/write?{params}"
         response = requests.get(memory_url)
@@ -33,6 +37,7 @@ def add_process():
         return jsonify({"message": "Process added, but failed to register memory", "error": str(e)}), 207
 
     return jsonify({"message": "Process added and memory registered"}), 201
+
 
 
 @app.route("/simulate", methods=["GET"])
